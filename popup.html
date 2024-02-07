@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Header Craft</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            width: 380px;
+            background-color: #d5e8f3;
+        }
+
+        h1 {
+            color: #3498db; /* Темно-голубой цвет текста */
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 10px;
+            border-radius: 8px;
+        }
+
+        #enabled-container {
+            width: 30px;
+            margin-right: 10px;
+        }
+
+        #enabled {
+            width: 100%;
+            transform: scale(1.5);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #d5e8f3; /* Светло-голубой фон таблицы */
+        }
+
+        th,
+        td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #bdc3c7; /* Серый-голубой цвет границы ячеек */
+            color: #2c3e50; /* Темно-синий цвет текста ячеек */
+        }
+
+        th {
+            background-color: #3498db; /* Темно-голубой цвет фона заголовка таблицы */
+            color: #fff; /* Белый цвет текста заголовка таблицы */
+        }
+
+        input[type="text"],
+        input[type="checkbox"] {
+            padding: 6px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"] {
+            width: calc(100% - 16px);
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        <h1>
+            <div id="enabled-container">
+                <input type="checkbox" name="debug" id="enabled">
+            </div>
+            Mod Header
+        </h1>
+
+        <form id="headers">
+            <table id="headersTable">
+                <tr>
+                    <th>Enabled</th>
+                    <th>Header Name</th>
+                    <th>Value</th>
+                </tr>
+            </table>
+        </form>
+    </div>
+</body>
+
+<script defer src="popup.js" type="module"></script>
+
+</html>
