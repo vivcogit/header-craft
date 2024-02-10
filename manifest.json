@@ -1,9 +1,11 @@
 {
     "name": "Header Craft",
-    "description": "Effortlessly customize HTTP headers for efficient testing and a tailored web experience",
+    "description": "BETA-VERSION. Effortlessly customize HTTP headers for efficient testing and a tailored web experience",
     "version": "0.9",
     "manifest_version": 3,
-    "icons": {},
+    "icons": {
+        "128": "icon_128.png"
+    },
     "action": {
         "default_popup": "popup.html"
     },
