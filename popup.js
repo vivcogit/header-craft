@@ -27,13 +27,13 @@ function addRow(id, { name, value, enabled }) {
     const inputName = document.createElement("input");
     inputName.type = "text";
     inputName.placeholder = "Header name";
-    inputName.value = value;
+    inputName.value = name;
     cellName.appendChild(inputName);
 
     const inputValue = document.createElement("input");
     inputValue.type = "text";
     inputValue.placeholder = "Value";
-    inputValue.value = name;
+    inputValue.value = value;
     cellValue.appendChild(inputValue);
 
     checkboxEnabled.addEventListener("change", (ev) => changeValueHandler(id, 'enabled', ev.target.checked));
