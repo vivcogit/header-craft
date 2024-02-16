@@ -1,4 +1,4 @@
-let { enabled = {} } = await chrome.storage.sync.get("enabled");
+let { enabledTabs = [] } = await chrome.storage.sync.get("enabledTabs");
 let { state = {} } = await chrome.storage.sync.get("state");
 let currentTabId;
 
@@ -6,25 +6,22 @@ const globalEnabledCheckbox = document.getElementById("enabled");
 
 globalEnabledCheckbox.addEventListener("change", (event) => {
     if (event.target.checked) {
-        enabled = {
-            ...enabled,
-            [currentTabId]: event.target.checked,
-        };
+        enabledTabs.push(currentTabId);
     } else {
-        delete enabled[currentTabId];
+        enabledTabs = enabledTabs.filter((item) => item !== currentTabId);
     }
 
-    chrome.storage.sync.set({ enabled });
+    chrome.storage.sync.set({ enabledTabs });
 });
 
 chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
     currentTabId = tabs[0].id;
-    globalEnabledCheckbox.checked = Boolean(enabled[currentTabId]);
+    globalEnabledCheckbox.checked = Boolean(enabledTabs.includes(currentTabId));
 });
 chrome.tabs.onRemoved.addListener(
     () => {
-        delete enabled[currentTabId];
-        chrome.storage.sync.set({ enabled });
+        enabledTabs = enabledTabs.filter((item) => item !== currentTabId);
+        chrome.storage.sync.set({ enabledTabs });
     }
 );
 
