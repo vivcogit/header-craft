@@ -1,18 +1,19 @@
 const DEFAULT_STATE = {
-  1: { enabled: false, name: '', value: '' },
-  2: { enabled: false, name: '', value: '' },
-  3: { enabled: false, name: '', value: '' },
+  "1": { tabIds: [], name: '', value: '' },
+  "2": { tabIds: [], name: '', value: '' },
+  "3": { tabIds: [], name: '', value: '' },
 };
 
-let { state } = chrome.storage.sync.get("state") || {};
-let { enabledTabs = [] } = chrome.storage.sync.get("enabledTabs") || [];
+const STATE_KEY = 'state';
+
+let { state } = chrome.storage.sync.get(STATE_KEY) || {};
 
 if (!state) {
   state = DEFAULT_STATE;
-  chrome.storage.sync.set({ state });
+  chrome.storage.sync.set({ [STATE_KEY]: state });
 }
 
-updateRules(state, enabledTabs);
+updateRules(state);
 
 chrome.storage.onChanged.addListener(handleStorageChange);
 
@@ -20,21 +21,10 @@ chrome.storage.onChanged.addListener(handleStorageChange);
 function handleStorageChange(changes) {
   Object.keys(changes).forEach((key) => {
     switch (key) {
-      case 'enabledTabs':
-        enabledTabs = changes.enabledTabs.newValue;
-
-        if (enabledTabs.length) {
-          updateRules(state, enabledTabs);
-        } else {
-          chrome.declarativeNetRequest.updateSessionRules({
-            removeRuleIds: getStateIds(state),
-          });
-        }
-        break;
-      case 'state':
+      case STATE_KEY:
         state = changes.state.newValue;
 
-        updateRules(state, enabledTabs);
+        updateRules(state);
         break;
     }
   })
@@ -60,28 +50,21 @@ function getRule(id, header, value, tabIds) {
     },
     condition: {
       regexFilter: '|http*',
-      tabIds,
+      tabIds: tabIds.map((tabId) => Number.parseInt(tabId)),
     },
   }
 }
 
-function getRules(state, tabIds) {
-  if (!tabIds.length) {
-    return [];
-  }
-
-  const rows = Object
+function getRules(state) {
+  return Object
     .entries(state)
-    .filter(([_, row]) => row.enabled && row.name && row.value);
-
-  console.log({rows})
-
-  return rows.map(([id, row]) => getRule(id, row.name, row.value, tabIds));
+    .filter(([_, { name, value, tabIds }]) => tabIds.length > 0 && name && value)
+    .map(([id, { name, value, tabIds }]) => getRule(id, name, value, tabIds));
 }
 
-function updateRules(state, tabIds) {
+function updateRules(state) {
   chrome.declarativeNetRequest.updateSessionRules({
-    addRules: getRules(state, tabIds),
+    addRules: getRules(state),
     removeRuleIds: getStateIds(state),
   });
 }

@@ -1,31 +1,30 @@
-let { enabledTabs = [] } = await chrome.storage.sync.get("enabledTabs");
-let { state = {} } = await chrome.storage.sync.get("state");
+const STATE_KEY = 'state';
+let { state = {} } = await chrome.storage.sync.get(STATE_KEY);
 let currentTabId;
 
-const globalEnabledCheckbox = document.getElementById("enabled");
-
-globalEnabledCheckbox.addEventListener("change", (event) => {
-    if (event.target.checked) {
-        enabledTabs.push(currentTabId);
-    } else {
-        enabledTabs = enabledTabs.filter((item) => item !== currentTabId);
-    }
-
-    chrome.storage.sync.set({ enabledTabs });
-});
-
 chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-    currentTabId = tabs[0].id;
-    globalEnabledCheckbox.checked = Boolean(enabledTabs.includes(currentTabId));
+    currentTabId = String(tabs[0].id);
+    // TODO show indicator
+    Object.keys(state).forEach((key) => {
+        const checkboxEnabled = document.querySelector(`#headersTable [data-id="${key}"] input[name="enabled"]`);
+
+        checkboxEnabled.checked = state[key].tabIds.includes(currentTabId);
+    });
 });
 chrome.tabs.onRemoved.addListener(
     () => {
-        enabledTabs = enabledTabs.filter((item) => item !== currentTabId);
-        chrome.storage.sync.set({ enabledTabs });
+        const newState = Object.keys(state).reduce((acc, key) => {
+            acc[key] = {
+                ...state[key],
+                tabIds: state[key].tabIds.filter((tabId) => tabId !== currentTabId),
+            }
+            return acc;
+        }, {});
+        chrome.storage.sync.set({ [STATE_KEY]: newState });
     }
 );
 
-function addRow(id, { name, value, enabled }) {
+function addRow(id, { name, value }) {
     const table = document.getElementById("headersTable");
 
     const row = table.insertRow();
@@ -36,7 +35,7 @@ function addRow(id, { name, value, enabled }) {
 
     const checkboxEnabled = document.createElement("input");
     checkboxEnabled.type = "checkbox";
-    checkboxEnabled.checked = enabled;
+    checkboxEnabled.name = "enabled";
     cellEnabled.appendChild(checkboxEnabled);
 
     const inputName = document.createElement("input");
@@ -51,7 +50,7 @@ function addRow(id, { name, value, enabled }) {
     inputValue.value = value;
     cellValue.appendChild(inputValue);
 
-    checkboxEnabled.addEventListener("change", (ev) => changeValueHandler(id, 'enabled', ev.target.checked));
+    checkboxEnabled.addEventListener("change", (ev) => changeEnabledCheckboxHandler(id, ev.target.checked));
     inputName.addEventListener("input", (ev) => changeValueHandler(id, 'name', ev.target.value));
     inputValue.addEventListener("input", (ev) => changeValueHandler(id, 'value', ev.target.value));
 }
@@ -65,7 +64,15 @@ function changeValueHandler(id, name, value) {
         }
     }
 
-    chrome.storage.sync.set({ state });
+    chrome.storage.sync.set({ [STATE_KEY]: state });
+}
+
+function changeEnabledCheckboxHandler(id, checked) {
+    const newValue = checked
+        ? [...state[id].tabIds, currentTabId]
+        : state[id].tabIds.filter((tabId) => tabId !== currentTabId);
+
+    changeValueHandler(id, 'tabIds', newValue);
 }
 
 Object.entries(state).forEach(([ id, row ]) => addRow(id, row));
