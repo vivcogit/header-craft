@@ -3,6 +3,8 @@ const DEFAULT_STATE = {
   "2": { tabIds: [], name: '', value: '' },
   "3": { tabIds: [], name: '', value: '' },
 };
+const DEFAULT_ICON = 'icon_128.png';
+const ACTIVE_ICON = 'icon_128-active.png';
 
 const STATE_KEY = 'state';
 
@@ -18,6 +20,35 @@ updateRules(state);
 chrome.storage.onChanged.addListener(handleStorageChange);
 
 // utils
+function getTabIdsFromState(state) {
+  return Object
+    .values(state)
+    .flatMap((rule) => rule.tabIds)
+    .map((tabId) => Number.parseInt(tabId));
+}
+
+function updateIcon(newState, oldState) {
+  const oldStateTabIds = getTabIdsFromState(oldState);
+  const newStateTabIds = getTabIdsFromState(newState);
+
+  const tabIdsToSetDefault = oldStateTabIds.filter((tabId) => !newStateTabIds.includes(tabId));
+  const tabIdsToSetActive = newStateTabIds.filter((tabId) => !oldStateTabIds.includes(tabId));
+  
+  tabIdsToSetActive.forEach((tabId) => {
+    chrome.action.setIcon({
+      path: ACTIVE_ICON,
+      tabId: tabId,
+    });
+  });
+
+  tabIdsToSetDefault.forEach((tabId) => {
+    chrome.action.setIcon({
+      path: DEFAULT_ICON,
+      tabId: tabId,
+    });
+  })
+}
+
 function handleStorageChange(changes) {
   Object.keys(changes).forEach((key) => {
     switch (key) {
@@ -25,6 +56,7 @@ function handleStorageChange(changes) {
         state = changes.state.newValue;
 
         updateRules(state);
+        updateIcon(state, changes.state.oldValue);
         break;
     }
   })

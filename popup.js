@@ -1,10 +1,11 @@
 const STATE_KEY = 'state';
+
 let { state = {} } = await chrome.storage.sync.get(STATE_KEY);
 let currentTabId;
 
 chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
     currentTabId = String(tabs[0].id);
-    // TODO show indicator
+
     Object.keys(state).forEach((key) => {
         const checkboxEnabled = document.querySelector(`#headersTable [data-id="${key}"] input[name="enabled"]`);
 
@@ -20,9 +21,17 @@ chrome.tabs.onRemoved.addListener(
             }
             return acc;
         }, {});
-        chrome.storage.sync.set({ [STATE_KEY]: newState });
+        updateState(newState);
     }
 );
+
+Object.entries(state).forEach(([ id, row ]) => addRow(id, row));
+
+// utils
+function updateState(newState) {
+    state = newState;
+    chrome.storage.sync.set({ [STATE_KEY]: newState });
+}
 
 function addRow(id, { name, value }) {
     const table = document.getElementById("headersTable");
@@ -56,15 +65,13 @@ function addRow(id, { name, value }) {
 }
 
 function changeValueHandler(id, name, value) {
-    state = {
+    updateState({
         ...state,
         [id]: {
             ...state[id],
             [name]: value,
         }
-    }
-
-    chrome.storage.sync.set({ [STATE_KEY]: state });
+    })
 }
 
 function changeEnabledCheckboxHandler(id, checked) {
@@ -74,5 +81,3 @@ function changeEnabledCheckboxHandler(id, checked) {
 
     changeValueHandler(id, 'tabIds', newValue);
 }
-
-Object.entries(state).forEach(([ id, row ]) => addRow(id, row));
