@@ -7,7 +7,6 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
             margin: 0;
             padding: 0;
             width: 380px;
@@ -15,62 +14,54 @@
         }
 
         h1 {
-            color: #3498db; /* Темно-голубой цвет текста */
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            padding: 0 10px;
-            border-radius: 8px;
+            color: #3498db;
+            text-align: left;
+            padding: 5px 10px 0;
+            margin: 0 0 5px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
-            background-color: #d5e8f3; /* Светло-голубой фон таблицы */
         }
 
         th,
         td {
-            padding: 8px;
+            padding: 5px;
             text-align: left;
-            border-bottom: 1px solid #bdc3c7; /* Серый-голубой цвет границы ячеек */
-            color: #2c3e50; /* Темно-синий цвет текста ячеек */
+            border-bottom: 1px solid #bdc3c7;
         }
 
         th {
-            background-color: #3498db; /* Темно-голубой цвет фона заголовка таблицы */
-            color: #fff; /* Белый цвет текста заголовка таблицы */
+            background-color: #3498db;
+            color: #fff;
         }
 
-        input[type="text"],
-        input[type="checkbox"] {
-            padding: 6px;
-            box-sizing: border-box;
+        td:first-child {
+            padding-right: 0;
         }
 
         input[type="text"] {
-            width: calc(100% - 16px);
+            padding: 4px;
+            width: calc(100% - 14px);
         }
     </style>
 </head>
 
 <body>
-    <div>
-        <h1>
-            Header Craft
-        </h1>
+    <h1>
+        Header Craft
+    </h1>
 
-        <form id="headers">
-            <table id="headersTable">
-                <tr>
-                    <th></th>
-                    <th>Name</th>
-                    <th>Value</th>
-                </tr>
-            </table>
-        </form>
-    </div>
+    <form id="headers">
+        <table id="headersTable">
+            <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Value</th>
+            </tr>
+        </table>
+    </form>
 </body>
 
 <script defer src="popup.js" type="module"></script>
