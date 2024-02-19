@@ -9,6 +9,7 @@ const ACTIVE_ICON = 'icon_128-active.png';
 const STATE_KEY = 'state';
 
 let { state } = chrome.storage.sync.get(STATE_KEY) || {};
+let currentTabId;
 
 if (!state) {
   state = DEFAULT_STATE;
@@ -18,35 +19,20 @@ if (!state) {
 updateRules(state);
 
 chrome.storage.onChanged.addListener(handleStorageChange);
+chrome.tabs.onActivated.addListener(handleActiveTabChanged);
 
 // utils
-function getTabIdsFromState(state) {
-  return Object
-    .values(state)
-    .flatMap((rule) => rule.tabIds)
-    .map((tabId) => Number.parseInt(tabId));
+function handleActiveTabChanged({ tabId }) {
+  currentTabId = String(tabId);
+  updateIcon();
 }
 
-function updateIcon(newState, oldState) {
-  const oldStateTabIds = getTabIdsFromState(oldState);
-  const newStateTabIds = getTabIdsFromState(newState);
-
-  const tabIdsToSetDefault = oldStateTabIds.filter((tabId) => !newStateTabIds.includes(tabId));
-  const tabIdsToSetActive = newStateTabIds.filter((tabId) => !oldStateTabIds.includes(tabId));
+function updateIcon() {
+  const isExtensionActivated = Object.values(state).some((rule) => rule.tabIds.includes(currentTabId));
   
-  tabIdsToSetActive.forEach((tabId) => {
-    chrome.action.setIcon({
-      path: ACTIVE_ICON,
-      tabId: tabId,
-    });
+  chrome.action.setIcon({
+    path: isExtensionActivated ? ACTIVE_ICON : DEFAULT_ICON,
   });
-
-  tabIdsToSetDefault.forEach((tabId) => {
-    chrome.action.setIcon({
-      path: DEFAULT_ICON,
-      tabId: tabId,
-    });
-  })
 }
 
 function handleStorageChange(changes) {
@@ -56,7 +42,7 @@ function handleStorageChange(changes) {
         state = changes.state.newValue;
 
         updateRules(state);
-        updateIcon(state, changes.state.oldValue);
+        updateIcon();
         break;
     }
   })
