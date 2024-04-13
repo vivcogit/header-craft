@@ -8,18 +8,23 @@ const ACTIVE_ICON = 'icon_128-active.png';
 
 const STATE_KEY = 'state';
 
-let { state } = chrome.storage.sync.get(STATE_KEY) || {};
-let currentTabId;
+let currentTabId, state;
+const allResourceTypes = Object.values(chrome.declarativeNetRequest.ResourceType);
 
-if (!state) {
-  state = DEFAULT_STATE;
-  chrome.storage.sync.set({ [STATE_KEY]: state });
+chrome.storage.sync.get(STATE_KEY).then(init);
+
+function init({ state: storageState }) {
+  state = storageState;
+
+  if (!state) {
+    state = DEFAULT_STATE;
+    chrome.storage.sync.set({ [STATE_KEY]: state });
+  }
+
+  updateRules(state);
+  chrome.storage.onChanged.addListener(handleStorageChange);
+  chrome.tabs.onActivated.addListener(handleActiveTabChanged);
 }
-
-updateRules(state);
-
-chrome.storage.onChanged.addListener(handleStorageChange);
-chrome.tabs.onActivated.addListener(handleActiveTabChanged);
 
 // utils
 function handleActiveTabChanged({ tabId }) {
@@ -57,18 +62,18 @@ function getRule(id, header, value, tabIds) {
     id: Number.parseInt(id, 10),
     priority: 1,
     action: {
-      type: 'modifyHeaders',
+      type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
       requestHeaders: [
         { 
           header, 
-          operation: 'set', 
+          operation: chrome.declarativeNetRequest.HeaderOperation.SET,
           value,
         },
       ],
     },
     condition: {
-      regexFilter: '|http*',
       tabIds: tabIds.map((tabId) => Number.parseInt(tabId)),
+      resourceTypes: allResourceTypes,
     },
   }
 }
@@ -81,8 +86,10 @@ function getRules(state) {
 }
 
 function updateRules(state) {
-  chrome.declarativeNetRequest.updateSessionRules({
-    addRules: getRules(state),
+  const rules = getRules(state);
+
+  chrome.declarativeNetRequest.updateDynamicRules({
+    addRules: rules,
     removeRuleIds: getStateIds(state),
   });
 }
