@@ -88,7 +88,7 @@ function getRules(state) {
 function updateRules(state) {
   const rules = getRules(state);
 
-  chrome.declarativeNetRequest.updateDynamicRules({
+  chrome.declarativeNetRequest.updateSessionRules({
     addRules: rules,
     removeRuleIds: getStateIds(state),
   });
