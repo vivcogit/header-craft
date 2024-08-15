@@ -9,8 +9,8 @@ const ACTIVE_ICON = 'icon_128-active.png';
 const STATE_KEY = 'state';
 
 let currentTabId, state;
-const allResourceTypes = Object.values(chrome.declarativeNetRequest.ResourceType);
 
+chrome.storage.sync.set({ [STATE_KEY]: DEFAULT_STATE });
 chrome.storage.sync.get(STATE_KEY).then(init);
 
 function init({ state: storageState }) {
@@ -22,11 +22,29 @@ function init({ state: storageState }) {
   }
 
   updateRules(state);
+
+  chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+    currentTabId = String(tabs[0].id);
+  });
+
   chrome.storage.onChanged.addListener(handleStorageChange);
   chrome.tabs.onActivated.addListener(handleActiveTabChanged);
+  chrome.tabs.onRemoved.addListener(handleCloseTab);
 }
 
 // utils
+function handleCloseTab() {
+  const newState = Object.keys(state).reduce((acc, key) => {
+      acc[key] = {
+          ...state[key],
+          tabIds: state[key].tabIds.filter((tabId) => tabId !== currentTabId),
+      }
+      return acc;
+  }, {});
+
+  state = newState;
+}
+
 function handleActiveTabChanged({ tabId }) {
   currentTabId = String(tabId);
   updateIcon();
@@ -57,39 +75,41 @@ function getStateIds(state) {
   return Object.keys(state).map((id) => Number.parseInt(id, 10))
 }
 
-function getRule(id, header, value, tabIds) {
-  return {
-    id: Number.parseInt(id, 10),
-    priority: 1,
-    action: {
-      type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
-      requestHeaders: [
-        { 
-          header, 
-          operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-          value,
-        },
-      ],
-    },
-    condition: {
-      tabIds: tabIds.map((tabId) => Number.parseInt(tabId)),
-      resourceTypes: allResourceTypes,
-    },
-  }
-}
-
-function getRules(state) {
-  return Object
-    .entries(state)
-    .filter(([_, { name, value, tabIds }]) => tabIds.length > 0 && name && value)
-    .map(([id, { name, value, tabIds }]) => getRule(id, name, value, tabIds));
-}
-
 function updateRules(state) {
-  const rules = getRules(state);
+  const rules = makeRulesByState(state);
 
   chrome.declarativeNetRequest.updateSessionRules({
     addRules: rules,
     removeRuleIds: getStateIds(state),
   });
+}
+
+const ALL_RESOURCE_TYPES = Object.values(chrome.declarativeNetRequest.ResourceType);
+
+function makeRule(id, header, value, tabIds) {
+    return {
+      id: Number.parseInt(id, 10),
+      priority: 1,
+      action: {
+        type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+        requestHeaders: [
+          { 
+            header, 
+            operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+            value,
+          },
+        ],
+      },
+      condition: {
+        tabIds: tabIds.map((tabId) => Number.parseInt(tabId, 10)),
+        resourceTypes: ALL_RESOURCE_TYPES,
+      },
+    }
+  }
+  
+function makeRulesByState(state) {
+    return Object
+        .entries(state)
+        .filter(([_, { name, value, tabIds }]) => tabIds.length > 0 && name && value)
+        .map(([id, { name, value, tabIds }]) => makeRule(id, name, value, tabIds));
 }

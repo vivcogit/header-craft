@@ -45,6 +45,22 @@
             padding: 4px;
             width: calc(100% - 14px);
         }
+
+        .footer {
+            padding: 4px;
+            text-align: end;
+        }
+
+        .footer button {
+            background: none;
+            border: none;
+            color: blue;
+            text-decoration: underline;
+            cursor: pointer;
+            padding: 0;
+            font: inherit;
+            font-size: larger;
+        }
     </style>
 </head>
 
@@ -62,6 +78,12 @@
             </tr>
         </table>
     </form>
+
+    <div class="footer">
+        <button id="export">export</button>
+        /
+        <button id="import">import</button>
+    </div>
 </body>
 
 <script defer src="popup.js" type="module"></script>

@@ -14,7 +14,8 @@
     ],
     "permissions": [
         "declarativeNetRequest",
-        "storage"
+        "storage",
+        "downloads"
     ],
     "background": {
         "service_worker": "background.js"

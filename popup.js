@@ -1,83 +1,35 @@
-const STATE_KEY = 'state';
+import { saveStateToFile, openJsonFile } from './client/files.js';
+import { getRowByKey, initializeTable } from './client/ui.js';
+import { Store } from './client/store.js';
 
-let { state = {} } = await chrome.storage.sync.get(STATE_KEY);
+const STATE_KEY = 'state';
+const store = new Store(STATE_KEY);
+await store.init();
+
 let currentTabId;
 
 chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+    const state = store.state;
+
     currentTabId = String(tabs[0].id);
 
+    initializeTable(store, currentTabId);
+
     Object.keys(state).forEach((key) => {
-        const checkboxEnabled = document.querySelector(`#headersTable [data-id="${key}"] input[name="enabled"]`);
+        const checkboxEnabled = getRowByKey(key);
 
         checkboxEnabled.checked = state[key].tabIds.includes(currentTabId);
     });
+
 });
-chrome.tabs.onRemoved.addListener(
-    () => {
-        const newState = Object.keys(state).reduce((acc, key) => {
-            acc[key] = {
-                ...state[key],
-                tabIds: state[key].tabIds.filter((tabId) => tabId !== currentTabId),
-            }
-            return acc;
-        }, {});
-        updateState(newState);
-    }
-);
 
-Object.entries(state).forEach(([ id, row ]) => addRow(id, row));
+const exportBtn = document.getElementById('export');
+exportBtn.addEventListener('click', () => saveStateToFile(store.state));
 
-// utils
-function updateState(newState) {
-    state = newState;
-    chrome.storage.sync.set({ [STATE_KEY]: newState });
-}
+const importBtn = document.getElementById('import');
+importBtn.addEventListener('click', () => openJsonFile(importState))
 
-function addRow(id, { name, value }) {
-    const table = document.getElementById("headersTable");
-
-    const row = table.insertRow();
-    row.setAttribute('data-id', id)
-    const cellEnabled = row.insertCell();
-    const cellName = row.insertCell();
-    const cellValue = row.insertCell();
-
-    const checkboxEnabled = document.createElement("input");
-    checkboxEnabled.type = "checkbox";
-    checkboxEnabled.name = "enabled";
-    cellEnabled.appendChild(checkboxEnabled);
-
-    const inputName = document.createElement("input");
-    inputName.type = "text";
-    inputName.placeholder = "Header name";
-    inputName.value = name;
-    cellName.appendChild(inputName);
-
-    const inputValue = document.createElement("input");
-    inputValue.type = "text";
-    inputValue.placeholder = "Value";
-    inputValue.value = value;
-    cellValue.appendChild(inputValue);
-
-    checkboxEnabled.addEventListener("change", (ev) => changeEnabledCheckboxHandler(id, ev.target.checked));
-    inputName.addEventListener("input", (ev) => changeValueHandler(id, 'name', ev.target.value));
-    inputValue.addEventListener("input", (ev) => changeValueHandler(id, 'value', ev.target.value));
-}
-
-function changeValueHandler(id, name, value) {
-    updateState({
-        ...state,
-        [id]: {
-            ...state[id],
-            [name]: value,
-        }
-    })
-}
-
-function changeEnabledCheckboxHandler(id, checked) {
-    const newValue = checked
-        ? [...state[id].tabIds, currentTabId]
-        : state[id].tabIds.filter((tabId) => tabId !== currentTabId);
-
-    changeValueHandler(id, 'tabIds', newValue);
+function importState(newState) {
+    store.updateState(newState);
+    initializeTable(store, currentTabId);
 }
