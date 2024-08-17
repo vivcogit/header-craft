@@ -37,7 +37,7 @@ function handleCloseTab() {
   const newState = Object.keys(state).reduce((acc, key) => {
       acc[key] = {
           ...state[key],
-          tabIds: state[key].tabIds.filter((tabId) => tabId !== currentTabId),
+          tabIds: state[key].tabIds?.filter((tabId) => tabId !== currentTabId),
       }
       return acc;
   }, {});
