@@ -2,6 +2,8 @@ const DEFAULT_STATE = {
   "1": { tabIds: [], name: '', value: '' },
   "2": { tabIds: [], name: '', value: '' },
   "3": { tabIds: [], name: '', value: '' },
+  "4": { tabIds: [], name: '', value: '' },
+  "5": { tabIds: [], name: '', value: '' },
 };
 const DEFAULT_ICON = 'icon_128.png';
 const ACTIVE_ICON = 'icon_128-active.png';
@@ -14,11 +16,14 @@ chrome.storage.sync.set({ [STATE_KEY]: DEFAULT_STATE });
 chrome.storage.sync.get(STATE_KEY).then(init);
 
 function init({ state: storageState }) {
-  state = storageState;
-
-  if (!state) {
+  if (!storageState) {
     state = DEFAULT_STATE;
     chrome.storage.sync.set({ [STATE_KEY]: state });
+  } else {
+    state = {
+      ...DEFAULT_STATE,
+      ...storageState
+    };
   }
 
   updateRules(state);
