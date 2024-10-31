@@ -57,7 +57,7 @@ function getChangeEnabledCheckboxHandler(store, currentTabId) {
 
         const newValue = checked
             ? [...state[id].tabIds, currentTabId]
-            : state[id].tabIds.filter((tabId) => tabId !== currentTabId);
+            : state[id].tabIds?.filter((tabId) => tabId !== currentTabId);
 
         store.changeValue(id, 'tabIds', newValue);
     }

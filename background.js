@@ -115,6 +115,6 @@ function makeRule(id, header, value, tabIds) {
 function makeRulesByState(state) {
     return Object
         .entries(state)
-        .filter(([_, { name, value, tabIds }]) => tabIds.length > 0 && name && value)
+        .filter(([_, { name, value, tabIds }]) => tabIds?.length && name && value)
         .map(([id, { name, value, tabIds }]) => makeRule(id, name, value, tabIds));
 }
