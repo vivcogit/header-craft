@@ -1,5 +1,5 @@
 import { saveStateToFile, openJsonFile } from './client/files.js';
-import { getRowByKey, initializeTable } from './client/ui.js';
+import { getCheckboxByRowKey, initializeTable } from './client/ui.js';
 import { Store } from './client/store.js';
 
 const STATE_KEY = 'state';
@@ -16,7 +16,7 @@ chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
     initializeTable(store, currentTabId);
 
     Object.keys(state).forEach((key) => {
-        const checkboxEnabled = getRowByKey(key);
+        const checkboxEnabled = getCheckboxByRowKey(key);
 
         checkboxEnabled.checked = state[key].tabIds.includes(currentTabId);
     });

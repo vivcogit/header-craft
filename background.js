@@ -12,7 +12,6 @@ const STATE_KEY = 'state';
 
 let currentTabId, state;
 
-chrome.storage.sync.set({ [STATE_KEY]: DEFAULT_STATE });
 chrome.storage.sync.get(STATE_KEY).then(init);
 
 function init({ state: storageState }) {
