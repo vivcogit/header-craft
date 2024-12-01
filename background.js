@@ -1,10 +1,21 @@
-const DEFAULT_STATE = {
-  "1": { tabIds: [], name: '', value: '' },
-  "2": { tabIds: [], name: '', value: '' },
-  "3": { tabIds: [], name: '', value: '' },
-  "4": { tabIds: [], name: '', value: '' },
-  "5": { tabIds: [], name: '', value: '' },
-};
+const DEFAULT_ROW_STATE = { tabIds: [], name: '', value: '', comment: '', };
+const getDefaultTabState = (name) => ({
+  name: name.toString(),
+  items: [
+    DEFAULT_ROW_STATE,
+    DEFAULT_ROW_STATE,
+    DEFAULT_ROW_STATE,
+    DEFAULT_ROW_STATE,
+    DEFAULT_ROW_STATE,
+  ]
+});
+
+const DEFAULT_STATE = [
+  getDefaultTabState(0),
+  getDefaultTabState(1),
+  getDefaultTabState(2),
+];
+
 const DEFAULT_ICON = 'icon_128.png';
 const ACTIVE_ICON = 'icon_128-active.png';
 
@@ -14,16 +25,28 @@ let currentTabId, state;
 
 chrome.storage.sync.get(STATE_KEY).then(init);
 
-function init({ state: storageState }) {
+function handleInitionState(storageState) {
   if (!storageState) {
-    state = DEFAULT_STATE;
-    chrome.storage.sync.set({ [STATE_KEY]: state });
-  } else {
-    state = {
-      ...DEFAULT_STATE,
-      ...storageState
-    };
+    return DEFAULT_STATE;
   }
+
+  if (Array.isArray(storageState)) {
+    return storageState;
+  }
+
+
+  // old state to new state, TODO remove after some time
+  return [
+    {
+      ...getDefaultTabState,
+      items: Object.values(storageState),
+    }
+  ]
+}
+
+function init({ state: storageState }) {
+  state = handleInitionState(storageState);
+  chrome.storage.sync.set({ [STATE_KEY]: state });
 
   updateRules(state);
 
@@ -38,15 +61,13 @@ function init({ state: storageState }) {
 
 // utils
 function handleCloseTab() {
-  const newState = Object.keys(state).reduce((acc, key) => {
-      acc[key] = {
-          ...state[key],
-          tabIds: state[key].tabIds?.filter((tabId) => tabId !== currentTabId),
-      }
-      return acc;
-  }, {});
-
-  state = newState;
+  state = state.map((group) => ({
+    ...group,
+    items: group.items.map((item) => ({
+      ...item,
+      tabIds: item.tabIds?.filter((tabId) => tabId !== currentTabId),
+    })),
+  }));
 }
 
 function handleActiveTabChanged({ tabId }) {
@@ -55,8 +76,10 @@ function handleActiveTabChanged({ tabId }) {
 }
 
 function updateIcon() {
-  const isExtensionActivated = Object.values(state).some((rule) => rule.tabIds.includes(currentTabId));
-  
+  const isExtensionActivated = state.some((group) =>
+    group.items.some((item) => item.tabIds.includes(currentTabId))
+  );
+
   chrome.action.setIcon({
     path: isExtensionActivated ? ACTIVE_ICON : DEFAULT_ICON,
   });
@@ -66,17 +89,20 @@ function handleStorageChange(changes) {
   Object.keys(changes).forEach((key) => {
     switch (key) {
       case STATE_KEY:
-        state = changes.state.newValue;
+        state = changes[STATE_KEY].newValue;
 
         updateRules(state);
         updateIcon();
         break;
     }
-  })
+  });
 }
 
+
 function getStateIds(state) {
-  return Object.keys(state).map((id) => Number.parseInt(id, 10))
+  return state.flatMap((group, groupIndex) =>
+    group.items.map((_, itemIndex) => groupIndex * 100 + itemIndex + 1)
+  );
 }
 
 function updateRules(state) {
@@ -91,29 +117,32 @@ function updateRules(state) {
 const ALL_RESOURCE_TYPES = Object.values(chrome.declarativeNetRequest.ResourceType);
 
 function makeRule(id, header, value, tabIds) {
-    return {
-      id: Number.parseInt(id, 10),
-      priority: 1,
-      action: {
-        type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
-        requestHeaders: [
-          { 
-            header, 
-            operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-            value,
-          },
-        ],
-      },
-      condition: {
-        tabIds: tabIds.map((tabId) => Number.parseInt(tabId, 10)),
-        resourceTypes: ALL_RESOURCE_TYPES,
-      },
-    }
-  }
+  return {
+    id,
+    priority: 1,
+    action: {
+      type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+      requestHeaders: [
+        {
+          header,
+          operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+          value,
+        },
+      ],
+    },
+    condition: {
+      tabIds: tabIds.map((tabId) => Number.parseInt(tabId, 10)),
+      resourceTypes: ALL_RESOURCE_TYPES,
+    },
+  };
+}
   
 function makeRulesByState(state) {
-    return Object
-        .entries(state)
-        .filter(([_, { name, value, tabIds }]) => tabIds?.length && name && value)
-        .map(([id, { name, value, tabIds }]) => makeRule(id, name, value, tabIds));
+  return state.flatMap((group, groupIndex) =>
+    group.items
+      .filter(({ name, value, tabIds }) => tabIds?.length && name && value)
+      .map((item, itemIndex) =>
+        makeRule(groupIndex * 100 + itemIndex + 1, item.name, item.value, item.tabIds)
+      )
+  );
 }
