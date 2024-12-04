@@ -1,0 +1,32 @@
+{
+  "name": "header-craft",
+  "version": "0.9.11",
+  "main": "background.js",
+  "type": "module",
+  "scripts": {
+    "build": "rollup -c",
+    "start": "npm run build:manifest -- --version 0.0.1 && rollup -c --watch",
+    "build:manifest": "node scripts/buildManifest.js",
+    "make-packet": "node scripts/makePacket.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vivcogit/header-craft.git"
+  },
+  "author": "vivcogit",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/vivcogit/header-craft/issues"
+  },
+  "homepage": "https://github.com/vivcogit/header-craft#readme",
+  "description": "",
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "minimist": "^1.2.8",
+    "prompts": "^2.4.2",
+    "rollup": "^4.28.0",
+    "rollup-plugin-copy": "^3.5.0",
+    "rollup-plugin-typescript2": "^0.36.0",
+    "typescript": "^5.7.2"
+  }
+}

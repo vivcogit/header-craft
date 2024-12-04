@@ -1,9 +1,13 @@
-export class Store {
-  key = null;
-  state = [];
-  activeGroup = 0;
+import { Item, State } from "../types";
 
-  constructor(key, groupKey, onChangeGroup) {
+export class Store {
+  key: string;
+  groupKey: string;
+  state: State = [];
+  activeGroup: number = 0;
+  onChangeGroup: (store: Store) => void;
+
+  constructor(key: string, groupKey: string, onChangeGroup: (store: Store) => void) {
     if (!key || !groupKey) {
       throw new Error('key and groupKey are required');
     }
@@ -33,17 +37,17 @@ export class Store {
     return this.state[this.activeGroup];
   }
 
-  updateGroup = (items) => {
+  updateActiveGroup = (items: Item[]) => {
     this.state[this.activeGroup].items = items;
     chrome.storage.sync.set({ [this.key]: this.state });
   }
 
-  updateState = (newState) => {
+  updateState = (newState: State) => {
     this.state = newState;
     chrome.storage.sync.set({ [this.key]: this.state });
   }
 
-  setActiveGroup(activeGroup) {
+  setActiveGroup(activeGroup: number) {
     this.activeGroup = activeGroup;
     chrome.storage.sync.set({ [this.groupKey]: this.activeGroup });
     this.onChangeGroup(this);
@@ -53,11 +57,11 @@ export class Store {
     return this.activeGroup;
   }
 
-  changeValue = (itemId, name, value) => {
+  changeValue = (itemId: number, name: string, value: string | string[]) => {
     const group = this.state[this.activeGroup];
 
     if (!group?.items[itemId]) {
-      console.warn(`Invalid groupId or itemId: ${groupId}, ${itemId}`);
+      console.warn(`Invalid groupId or itemId: ${this.activeGroup}, ${itemId}`);
       return
     }
 
