@@ -33,14 +33,19 @@ export class Store {
     return this.state[this.activeGroup];
   }
 
+  updateGroup = (items) => {
+    this.state[this.activeGroup].items = items;
+    chrome.storage.sync.set({ [this.key]: this.state });
+  }
+
   updateState = (newState) => {
     this.state = newState;
-    chrome.storage.sync.set({ [this.key]: newState });
+    chrome.storage.sync.set({ [this.key]: this.state });
   }
 
   setActiveGroup(activeGroup) {
     this.activeGroup = activeGroup;
-    chrome.storage.sync.set({ [this.groupKey]: activeGroup });
+    chrome.storage.sync.set({ [this.groupKey]: this.activeGroup });
     this.onChangeGroup(this);
   }
 

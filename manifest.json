@@ -1,7 +1,7 @@
 {
     "name": "Header Craft",
     "description": "Effortlessly customize HTTP headers for efficient testing and a tailored web experience",
-    "version": "0.9.10",
+    "version": "0.9.11",
     "manifest_version": 3,
     "icons": {
         "128": "icon_128.png"

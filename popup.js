@@ -18,7 +18,7 @@ chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
     store.getState().items.forEach((item, id) => {
         const checkboxEnabled = getCheckboxByRowKey(id);
 
-        checkboxEnabled.checked = item.tabIds.includes(currentTabId);
+        checkboxEnabled.checked = item.tabIds?.includes(currentTabId);
     });
 
 });
@@ -30,6 +30,11 @@ const importBtn = document.getElementById('import');
 importBtn.addEventListener('click', () => openJsonFile(importState))
 
 function importState(newState) {
-    store.updateState(newState);
+    if (!Array.isArray(newState)) {
+        newState = Object.values(newState);
+        store.updateGroup(newState);
+    } else {
+        store.updateState(newState);
+    }
     renderTable(store, currentTabId);
 }

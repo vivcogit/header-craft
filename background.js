@@ -38,9 +38,11 @@ function handleInitionState(storageState) {
   // old state to new state, TODO remove after some time
   return [
     {
-      ...getDefaultTabState,
+      ...getDefaultTabState(0),
       items: Object.values(storageState),
-    }
+    },
+    getDefaultTabState(1),
+    getDefaultTabState(2),
   ]
 }
 
@@ -77,7 +79,7 @@ function handleActiveTabChanged({ tabId }) {
 
 function updateIcon() {
   const isExtensionActivated = state.some((group) =>
-    group.items.some((item) => item.tabIds.includes(currentTabId))
+    group.items.some((item) => item.tabIds?.includes(currentTabId))
   );
 
   chrome.action.setIcon({
@@ -131,7 +133,7 @@ function makeRule(id, header, value, tabIds) {
       ],
     },
     condition: {
-      tabIds: tabIds.map((tabId) => Number.parseInt(tabId, 10)),
+      tabIds: tabIds?.map((tabId) => Number.parseInt(tabId, 10)),
       resourceTypes: ALL_RESOURCE_TYPES,
     },
   };

@@ -2,7 +2,7 @@ function addRow(table, id, currentTabId, { comment, name, value, tabIds }, {onCh
     const row = table.insertRow();
     row.setAttribute('data-id', id);
 
-    const checkboxEnabled = createCheckbox(tabIds.includes(currentTabId), (ev) => onChangeEnabled(id, ev.target.checked));
+    const checkboxEnabled = createCheckbox(tabIds?.includes(currentTabId), (ev) => onChangeEnabled(id, ev.target.checked));
     const commentField = createTextInput('Comment', comment, 'comment', (ev) => onChangeValue(id, 'comment', ev.target.value));
     const inputName = createTextInput('Header name', name, 'name', (ev) => onChangeValue(id, 'name', ev.target.value));
     const inputValue = createTextInput('Value', value, 'value', (ev) => onChangeValue(id, 'value', ev.target.value));
