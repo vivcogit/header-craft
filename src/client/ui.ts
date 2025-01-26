@@ -1,4 +1,4 @@
-import { Item } from "../types";
+import { Item } from "../state";
 import { Store } from "./store";
 
 function addRow(

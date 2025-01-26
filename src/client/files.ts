@@ -1,5 +1,4 @@
-import { State } from '../types';
-import { adaptStateForSaving } from './state';
+import { State } from '../state';
 
 function saveDataToFile(data: any, filename: string) {
     const blob = new Blob([data], { type: 'application/json' });
@@ -17,7 +16,7 @@ function saveDataToFile(data: any, filename: string) {
 }
 
 export function saveStateToFile(state: State) {
-    const data = JSON.stringify(adaptStateForSaving(state));
+    const data = JSON.stringify(state.getCleanItems());
     const timestamp = (new Date()).getTime();
     const filename = `header_craft_${timestamp}`;
     saveDataToFile(data, filename);

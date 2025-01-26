@@ -1,7 +1,7 @@
 import { saveStateToFile, openJsonFile } from './client/files';
 import { getCheckboxByRowKey, renderTable, renderGroupSwitcher } from './client/ui';
 import { Store } from './client/store';
-import { State } from './types';
+import { State } from './state';
 
 const STATE_KEY = 'state';
 const GROUP_KEY = 'group';

@@ -1,4 +1,4 @@
-import { Group, Item, State } from "./types";
+import { Group, Item, State } from "./state";
 
 const DEFAULT_ROW_STATE: Item = { tabIds: [], name: '', value: '', comment: '', };
 const getDefaultTabState = (name: string): Group => ({
@@ -30,10 +30,10 @@ chrome.storage.sync.get(STATE_KEY).then(init);
 
 function handleInitionState(storageState: State | null): State {
   if (!Array.isArray(storageState)) {
-    return DEFAULT_STATE;
+    return new State(DEFAULT_STATE);
   }
 
-  return storageState;
+  return new State(storageState);
 }
 
 function init(value: { [key: string]: any; }) {
@@ -52,13 +52,7 @@ function init(value: { [key: string]: any; }) {
 }
 
 function handleCloseTab() {
-  state = state.map((group) => ({
-    ...group,
-    items: group.items.map((item) => ({
-      ...item,
-      tabIds: item.tabIds?.filter((tabId) => tabId !== currentTabId),
-    })),
-  }));
+  state.removeTabId(currentTabId);
 }
 
 function handleActiveTabChanged({ tabId }: { tabId: number }) {
@@ -67,7 +61,7 @@ function handleActiveTabChanged({ tabId }: { tabId: number }) {
 }
 
 function updateIcon() {
-  const isExtensionActivated = state.some((group) =>
+  const isExtensionActivated = state.getItems().some((group) =>
     group.items.some((item) => item.tabIds?.includes(currentTabId))
   );
 
@@ -91,7 +85,7 @@ function handleStorageChange(changes: { [key: string]: chrome.storage.StorageCha
 
 
 function getStateIds(state: State) {
-  return state.flatMap((group, groupIndex) =>
+  return state.getItems().flatMap((group, groupIndex) =>
     group.items.map((_, itemIndex) => groupIndex * 100 + itemIndex + 1)
   );
 }
@@ -129,7 +123,7 @@ function makeRule(id: number, header: string, value: string, tabIds: string[]) {
 }
   
 function makeRulesByState(state: State) {
-  return state.flatMap((group, groupIndex) =>
+  return state.getItems().flatMap((group, groupIndex) =>
     group.items
       .filter(({ name, value, tabIds }) => tabIds?.length && name && value)
       .map((item, itemIndex) =>

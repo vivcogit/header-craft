@@ -1,9 +1,9 @@
-import { Item, State } from "../types";
+import { Item, State } from "../state";
 
 export class Store {
   key: string;
   groupKey: string;
-  state: State = [];
+  state: State = new State();
   activeGroup: number = 0;
   onChangeGroup: (store: Store) => void;
 
@@ -21,12 +21,12 @@ export class Store {
     const { [this.groupKey] : group = 0 } = await chrome.storage.sync.get(this.groupKey);
     const { [this.key]: state } = await chrome.storage.sync.get(this.key);
 
-    this.state = state;
+    this.state.setItems(state.items);
     this.activeGroup = group || 0;
   }
 
   getGroups() {
-    return this.state.map((group, ix) => ({
+    return this.state.getItems().map((group, ix) => ({
       ix,
       name: group.name,
       isActive: ix === this.activeGroup,
@@ -34,11 +34,11 @@ export class Store {
   }
 
   getState() {
-    return this.state[this.activeGroup];
+    return this.state.getItems()[this.activeGroup];
   }
 
   updateActiveGroup = (items: Item[]) => {
-    this.state[this.activeGroup].items = items;
+    this.state.getItems()[this.activeGroup].items = items;
     chrome.storage.sync.set({ [this.key]: this.state });
   }
 
@@ -58,7 +58,7 @@ export class Store {
   }
 
   changeValue = (itemId: number, name: string, value: string | string[]) => {
-    const group = this.state[this.activeGroup];
+    const group = this.state.getItems()[this.activeGroup];
 
     if (!group?.items[itemId]) {
       console.warn(`Invalid groupId or itemId: ${this.activeGroup}, ${itemId}`);
