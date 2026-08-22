@@ -14,11 +14,17 @@ async function closeBrowser(browser, userDataDir) {
 
 export async function launchExtension(extensionPath) {
   const userDataDir = await mkdtemp(join(tmpdir(), 'header-craft-'));
+  const args = ['--disable-crash-reporter'];
   let browser;
+
+  if (process.platform === 'linux' && process.env.CI === 'true') {
+    args.push('--no-sandbox', '--disable-setuid-sandbox');
+  }
 
   try {
     browser = await puppeteer.launch({
-      args: ['--disable-crash-reporter'],
+      args,
+      dumpio: process.env.CI === 'true',
       enableExtensions: [extensionPath],
       headless: true,
       pipe: true,
