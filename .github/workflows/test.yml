@@ -2,20 +2,33 @@ name: Tests
 
 on:
   push:
+    branches:
+      - main
   pull_request:
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: 24
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm run test:unit
+      - run: npm run release:package
+      - run: npm run test:e2e
+        env:
+          HEADER_CRAFT_EXTENSION_PATH: ${{ github.workspace }}/artifacts/extension
+      - run: git diff --exit-code

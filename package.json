@@ -1,12 +1,15 @@
 {
   "name": "header-craft",
-  "version": "0.9.12",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=24"
   },
   "scripts": {
+    "release:check": "node scripts/release.mjs check",
+    "release:package": "node scripts/release.mjs package",
+    "release:prepare": "node scripts/release.mjs prepare",
     "test:unit": "node --test tests/state.test.js",
     "test:e2e": "node --test tests/extension.test.js",
     "test": "npm run test:unit && npm run test:e2e"
