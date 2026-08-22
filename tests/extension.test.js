@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { resolve } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
 
@@ -9,7 +10,9 @@ import {
   openActionPopup,
 } from './helpers/extension.js';
 
-const extensionPath = fileURLToPath(new URL('..', import.meta.url));
+const extensionPath = process.env.HEADER_CRAFT_EXTENSION_PATH
+  ? resolve(process.env.HEADER_CRAFT_EXTENSION_PATH)
+  : fileURLToPath(new URL('..', import.meta.url));
 
 test('applies a header to one tab across origins and cleans up when it closes', { timeout: 30_000 }, async (t) => {
   const server = await startEchoServer();

@@ -1,0 +1,119 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      artifact-name: ${{ steps.release.outputs.artifact-name }}
+      version: ${{ steps.release.outputs.version }}
+      zip-name: ${{ steps.release.outputs.zip-name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Validate release tag
+        id: release
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
+          version="${GITHUB_REF_NAME#v}"
+          commit="$(git rev-parse "${GITHUB_REF_NAME}^{commit}")"
+          test "$commit" = "$(git rev-parse HEAD)"
+          git fetch --no-tags origin refs/heads/main:refs/remotes/origin/main
+          git merge-base --is-ancestor "$commit" refs/remotes/origin/main
+          npm run release:check -- "$version"
+
+          echo "artifact-name=header-craft-v${version}-${GITHUB_RUN_ATTEMPT}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "zip-name=header-craft-v${version}.zip" >> "$GITHUB_OUTPUT"
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run release:package -- "${{ steps.release.outputs.version }}"
+      - run: npm run test:e2e
+        env:
+          HEADER_CRAFT_EXTENSION_PATH: ${{ github.workspace }}/artifacts/extension
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: ${{ steps.release.outputs.artifact-name }}
+          path: |
+            artifacts/${{ steps.release.outputs.zip-name }}
+            artifacts/${{ steps.release.outputs.zip-name }}.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  github-release:
+    needs: package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: ${{ needs.package.outputs.artifact-name }}
+          path: artifacts
+      - name: Verify checksum
+        working-directory: artifacts
+        run: sha256sum --check "${{ needs.package.outputs.zip-name }}.sha256"
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: v${{ needs.package.outputs.version }}
+          VERSION: ${{ needs.package.outputs.version }}
+          ZIP_NAME: ${{ needs.package.outputs.zip-name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir existing
+
+          if is_draft="$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null)"; then
+            :
+          else
+            gh release create "$TAG" \
+              --verify-tag \
+              --draft \
+              --title "Header Craft $VERSION" \
+              --generate-notes
+            is_draft=true
+          fi
+
+          for file in "$ZIP_NAME" "$ZIP_NAME.sha256"; do
+            if gh release download "$TAG" --pattern "$file" --dir existing >/dev/null 2>&1; then
+              cmp "artifacts/$file" "existing/$file"
+            else
+              test "$is_draft" = true
+              gh release upload "$TAG" "artifacts/$file"
+            fi
+          done
+
+          if test "$is_draft" = true; then
+            gh release edit "$TAG" --draft=false
+          fi
