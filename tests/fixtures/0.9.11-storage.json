@@ -1,0 +1,34 @@
+[
+  {
+    "name": "0",
+    "items": [
+      {
+        "tabIds": ["17", "29"],
+        "name": "X-Debug",
+        "value": "alpha",
+        "comment": "debug API"
+      },
+      {
+        "tabIds": [],
+        "name": "X-Empty",
+        "value": "",
+        "comment": "disabled"
+      }
+    ]
+  },
+  {
+    "name": "1",
+    "items": [
+      {
+        "tabIds": ["29"],
+        "name": "Authorization",
+        "value": "Bearer test",
+        "comment": "test token"
+      }
+    ]
+  },
+  {
+    "name": "2",
+    "items": []
+  }
+]

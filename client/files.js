@@ -1,45 +1,42 @@
-import { adaptStateForSaving } from './state.js';
+import { importProfile, serializeProfile } from './state.js';
 
-function saveDataToFile(data, filename) {
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-  
-    chrome.downloads.download({
-        url: url,
-        filename: filename,
-        saveAs: true
-    }, function(downloadId) {
-        if (chrome.runtime.lastError) {
-            console.error(chrome.runtime.lastError.message);
-        }
+export function parseState(text) {
+  return importProfile(JSON.parse(text));
+}
+
+export function stringifyState(state) {
+  return JSON.stringify(serializeProfile(state), null, 2);
+}
+
+export async function saveStateToFile(state) {
+  const blob = new Blob([stringifyState(state)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  try {
+    return await chrome.downloads.download({
+      url,
+      filename: `header_craft_${Date.now()}.json`,
+      saveAs: true,
     });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
-export function saveStateToFile(state) {
-    const data = JSON.stringify(adaptStateForSaving(state));
-    const timestamp = (new Date()).getTime();
-    const filename = `header_craft_${timestamp}`;
-    saveDataToFile(data, filename);
-}
-
-export function openJsonFile(onSuccess) {
+export function openJsonFile() {
+  return new Promise((resolve, reject) => {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
 
-    fileInput.addEventListener('change', function(event) {
-        const file = event.target.files[0];
-    
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const fileContent = event.target.result;
-                const fileData = JSON.parse(fileContent);
-
-                onSuccess(fileData);
-            };
-            reader.readAsText(file);
-        }
-    });
-  
+    fileInput.addEventListener('change', async () => {
+      try {
+        const file = fileInput.files?.[0];
+        resolve(file ? parseState(await file.text()) : undefined);
+      } catch (error) {
+        reject(error);
+      }
+    }, { once: true });
+    fileInput.addEventListener('cancel', () => resolve(undefined), { once: true });
     fileInput.click();
+  });
 }

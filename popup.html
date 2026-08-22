@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="utf-8">
     <title>Header Craft</title>
 
     <style>
@@ -61,7 +62,10 @@
         }
 
         input[type="radio"] {
-            display: none;
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
         }
 
         input[type="radio"]:checked + .sidebar-btn {
@@ -73,7 +77,12 @@
             background-color: #3498db;
         }
 
-        form {
+        input[type="radio"]:focus-visible + .sidebar-btn {
+            outline: 2px solid #000;
+            outline-offset: -2px;
+        }
+
+        #headers {
             flex-grow: 1;
         }
 
@@ -125,6 +134,13 @@
             font: inherit;
             font-size: larger;
         }
+
+        #status {
+            min-height: 1em;
+            margin: 0;
+            padding: 0 10px 4px;
+            color: #b00020;
+        }
     </style>
 </head>
 
@@ -138,24 +154,29 @@
             <!-- <button class="sidebar-btn add">+</button> -->
         </aside>
 
-        <form id="headers">
+        <div id="headers">
             <table id="headersTable">
-                <tr>
-                    <th></th>
-                    <th>Name</th>
-                    <th>Value</th>
-                </tr>
+                <thead>
+                    <tr>
+                        <th scope="col">On</th>
+                        <th scope="col">Comment</th>
+                        <th scope="col">Name</th>
+                        <th scope="col">Value</th>
+                    </tr>
+                </thead>
+                <tbody id="headersTableBody"></tbody>
             </table>
-        </form>
+        </div>
     </div>
 
     <div class="footer">
-        <button id="export">export</button>
+        <button id="export" type="button">export</button>
         /
-        <button id="import">import</button>
+        <button id="import" type="button">import</button>
     </div>
-</body>
 
-<script defer src="popup.js" type="module"></script>
+    <p id="status" role="status" aria-live="polite"></p>
+    <script src="popup.js" type="module"></script>
+</body>
 
 </html>

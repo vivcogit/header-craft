@@ -2,10 +2,33 @@ function addRow(table, id, currentTabId, { comment, name, value, tabIds }, {onCh
     const row = table.insertRow();
     row.setAttribute('data-id', id);
 
-    const checkboxEnabled = createCheckbox(tabIds?.includes(currentTabId), (ev) => onChangeEnabled(id, ev.target.checked));
-    const commentField = createTextInput('Comment', comment, 'comment', (ev) => onChangeValue(id, 'comment', ev.target.value));
-    const inputName = createTextInput('Header name', name, 'name', (ev) => onChangeValue(id, 'name', ev.target.value));
-    const inputValue = createTextInput('Value', value, 'value', (ev) => onChangeValue(id, 'value', ev.target.value));
+    const rowNumber = id + 1;
+    const checkboxEnabled = createCheckbox(
+        tabIds?.includes(currentTabId),
+        `Enable header ${rowNumber}`,
+        (ev) => onChangeEnabled(id, ev.target.checked)
+    );
+    const commentField = createTextInput(
+        'Comment',
+        `Comment for header ${rowNumber}`,
+        comment,
+        'comment',
+        (ev) => onChangeValue(id, 'comment', ev.target.value)
+    );
+    const inputName = createTextInput(
+        'Header name',
+        `Header name ${rowNumber}`,
+        name,
+        'name',
+        (ev) => onChangeValue(id, 'name', ev.target.value)
+    );
+    const inputValue = createTextInput(
+        'Value',
+        `Value for header ${rowNumber}`,
+        value,
+        'value',
+        (ev) => onChangeValue(id, 'value', ev.target.value)
+    );
 
     row.insertCell().appendChild(checkboxEnabled);
     row.insertCell().appendChild(commentField);
@@ -13,22 +36,24 @@ function addRow(table, id, currentTabId, { comment, name, value, tabIds }, {onCh
     row.insertCell().appendChild(inputValue);
 }
 
-function createCheckbox(checked, onChange) {
+function createCheckbox(checked, label, onChange) {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.name = 'enabled';
+    checkbox.setAttribute('aria-label', label);
     checkbox.addEventListener('change', onChange);
     checkbox.checked = checked;
     return checkbox;
 }
 
-function createTextInput(placeholder, value = '', className, onChange) {
+function createTextInput(placeholder, label, value = '', className, onChange) {
     const input = document.createElement('input');
     input.type = 'text';
     input.placeholder = placeholder;
     input.value = value;
     input.className = className;
-    input.addEventListener('input', onChange)
+    input.setAttribute('aria-label', label);
+    input.addEventListener('input', onChange);
     return input;
 }
 
@@ -36,12 +61,14 @@ export function cleanTable(table) {
     table.innerHTML = '';
 }
 
-export function renderTable(store, currentTabId) {
-    const table = document.getElementById('headersTable');
+export function renderTable(store, currentTabId, onError = console.error) {
+    const table = document.getElementById('headersTableBody');
     if (!table) return;
 
     cleanTable(table);
     const state = store.getState();
+
+    if (!state) return;
 
     state.items.forEach((item, id) => {
         addRow(
@@ -49,8 +76,8 @@ export function renderTable(store, currentTabId) {
             id, currentTabId,
             item,
             {
-                onChangeEnabled: getChangeEnabledCheckboxHandler(store, currentTabId),
-                onChangeValue: store.changeValue,
+                onChangeEnabled: getChangeEnabledCheckboxHandler(store, currentTabId, onError),
+                onChangeValue: (...args) => store.changeValue(...args).catch(onError),
             }
         );
     });
@@ -64,7 +91,7 @@ function createRadioInput(value, id, isActive, onChange) {
     radio.value = value;
     radio.id = id;
     radio.checked = isActive;
-    radio.addEventListener('change', () => radio.checked && onChange())
+    radio.addEventListener('change', () => radio.checked && onChange());
 
     return radio;
 }
@@ -78,9 +105,11 @@ function createLabel(classname, forField, text) {
     return label;
 }
 
-export function renderGroupSwitcher(store) {
+export function renderGroupSwitcher(store, onSelectGroup) {
     const aside = document.getElementById('aside');
     if (!aside) return;
+
+    aside.innerHTML = '';
 
     const groups = store.getGroups();
 
@@ -90,25 +119,20 @@ export function renderGroupSwitcher(store) {
                 group.ix,
                 `groupRadio${group.ix}`,
                 group.isActive,
-                () => store.setActiveGroup(group.ix)
+                () => onSelectGroup(group.ix)
             )
         );
-        aside.appendChild(createLabel("sidebar-btn", `groupRadio${group.ix}`, group.name));
+        aside.appendChild(createLabel('sidebar-btn', `groupRadio${group.ix}`, group.name));
     });
 }
 
-function getChangeEnabledCheckboxHandler(store, currentTabId) {
+function getChangeEnabledCheckboxHandler(store, currentTabId, onError) {
     return (itemId, checked) => {
         const group = store.getState();
         const newTabIds = checked
-            ? [...(group.items[itemId].tabIds || []), currentTabId]
+            ? [...new Set([...(group.items[itemId].tabIds || []), currentTabId])]
             : (group.items[itemId].tabIds || []).filter((tabId) => tabId !== currentTabId);
-    
-        store.changeValue(itemId, 'tabIds', newTabIds);
-    }
-  }
-  
 
-export function getCheckboxByRowKey(key) {
-    return document.querySelector(`#headersTable [data-id="${key}"] input[name="enabled"]`);
+        store.changeValue(itemId, 'tabIds', newTabIds).catch(onError);
+    }
 }

@@ -1,0 +1,31 @@
+[
+  {
+    "name": "0",
+    "items": [
+      {
+        "name": "X-Debug",
+        "value": "alpha",
+        "comment": "debug API"
+      },
+      {
+        "name": "X-Empty",
+        "value": "",
+        "comment": "disabled"
+      }
+    ]
+  },
+  {
+    "name": "1",
+    "items": [
+      {
+        "name": "Authorization",
+        "value": "Bearer test",
+        "comment": "test token"
+      }
+    ]
+  },
+  {
+    "name": "2",
+    "items": []
+  }
+]

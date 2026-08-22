@@ -1,0 +1,12 @@
+{
+  "1": {
+    "tabIds": ["17"],
+    "name": "X-Legacy",
+    "value": "one"
+  },
+  "2": {
+    "tabIds": [],
+    "name": "X-Second",
+    "value": "two"
+  }
+}

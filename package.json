@@ -1,0 +1,17 @@
+{
+  "name": "header-craft",
+  "version": "0.9.12",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test:unit": "node --test tests/state.test.js",
+    "test:e2e": "node --test tests/extension.test.js",
+    "test": "npm run test:unit && npm run test:e2e"
+  },
+  "devDependencies": {
+    "puppeteer": "24.31.0"
+  }
+}

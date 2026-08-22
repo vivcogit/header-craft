@@ -1,40 +1,85 @@
-import { saveStateToFile, openJsonFile } from './client/files.js';
-import { getCheckboxByRowKey, renderTable, renderGroupSwitcher } from './client/ui.js';
+import { openJsonFile, saveStateToFile } from './client/files.js';
+import { renderGroupSwitcher, renderTable } from './client/ui.js';
 import { Store } from './client/store.js';
 
 const STATE_KEY = 'state';
 const GROUP_KEY = 'group';
+
+const store = new Store(STATE_KEY, GROUP_KEY);
+const exportBtn = document.getElementById('export');
+const importBtn = document.getElementById('import');
+const status = document.getElementById('status');
+
 let currentTabId;
 
-const store = new Store(STATE_KEY, GROUP_KEY, (store) => renderTable(store, currentTabId));
-await store.init();
+exportBtn.disabled = true;
+importBtn.disabled = true;
 
-chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-    currentTabId = String(tabs[0].id);
+function showStatus(message = '', isError = false) {
+    status.textContent = message;
+    status.style.color = isError ? '#b00020' : '#176b2c';
+}
 
-    renderTable(store, currentTabId);
-    renderGroupSwitcher(store);
+function showError(error) {
+    console.error(error);
+    showStatus(error instanceof Error ? error.message : String(error), true);
+}
 
-    store.getState().items.forEach((item, id) => {
-        const checkboxEnabled = getCheckboxByRowKey(id);
-
-        checkboxEnabled.checked = item.tabIds?.includes(currentTabId);
+function render() {
+    renderTable(store, currentTabId, (error) => {
+        showError(error);
+        render();
     });
+    renderGroupSwitcher(store, async (groupId) => {
+        try {
+            await store.setActiveGroup(groupId);
+            showStatus();
+        } catch (error) {
+            showError(error);
+        }
+        render();
+    });
+}
 
+async function init() {
+    const [, tabs] = await Promise.all([
+        store.init(),
+        chrome.tabs.query({ active: true, currentWindow: true }),
+    ]);
+    const tabId = tabs[0]?.id;
+
+    if (!Number.isInteger(tabId)) {
+        throw new Error('Unable to identify the active tab');
+    }
+
+    currentTabId = String(tabId);
+    render();
+    exportBtn.disabled = false;
+    importBtn.disabled = false;
+}
+
+exportBtn.addEventListener('click', async () => {
+    try {
+        await store.whenIdle();
+        await saveStateToFile(store.state);
+        showStatus('Export started');
+    } catch (error) {
+        showError(error);
+    }
 });
 
-const exportBtn = document.getElementById('export');
-exportBtn.addEventListener('click', () => saveStateToFile(store.state));
+importBtn.addEventListener('click', async () => {
+    try {
+        const importedState = await openJsonFile();
 
-const importBtn = document.getElementById('import');
-importBtn.addEventListener('click', () => openJsonFile(importState))
+        if (!importedState) return;
 
-function importState(newState) {
-    if (!Array.isArray(newState)) {
-        newState = Object.values(newState);
-        store.updateGroup(newState);
-    } else {
-        store.updateState(newState);
+        await store.updateState(importedState);
+        render();
+        showStatus('Import complete');
+    } catch (error) {
+        showError(error);
     }
-    renderTable(store, currentTabId);
-}
+});
+
+init().catch(showError);
